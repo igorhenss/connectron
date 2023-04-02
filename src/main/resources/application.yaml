@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/connectron?currentSchema=connectron
+    username: postgres
+    password: (#pSQL#)
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+  liquibase:
+    change-log: classpath:/liquibase/changelog.yaml
+    default-schema: connectron
+
+server:
+  port: 8080
+  servlet:
+    context-path: /connectron

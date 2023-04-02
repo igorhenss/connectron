@@ -1,0 +1,27 @@
+version: "3.8"
+services:
+  connectron:
+    container_name: 'connectron'
+    image: connectron
+    restart: unless-stopped
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+
+  postgres:
+    container_name: 'connectron-postgres'
+    image: postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres:/data/postgres
+    environment:
+      - POSTGRES_DB=connectron
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=(#pSQL#)
+
+volumes:
+  postgres:
