@@ -8,8 +8,6 @@ import com.igorhenss.connectron.exception.NotFoundException
 import com.igorhenss.connectron.mapping.MappingService
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpMethod
-import org.springframework.http.RequestEntity
-import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 
@@ -19,14 +17,39 @@ class ConnectorService(
     private val mappingService: MappingService
 ) {
 
-    fun connect(dto: ConnectorDTO): Any? {
+    fun connect(dto: ConnectorRequestDTO): Any? {
         val mappings = getMappings(dto.mappingId)
         val resultingJson = translateJson(mappings, dto)
-        return makeConnectionRequest(dto, resultingJson)
+        val connectionResponse = makeConnectionRequest(dto, resultingJson)
+        return buildResponse(resultingJson, connectionResponse)
     }
 
+    private fun getMappings(mappingId: Long) = mappingService.findById(mappingId).getJsonAsMap()
+
+    private fun translateJson(mappings: Map<String, String>, dto: ConnectorRequestDTO): ObjectNode {
+        val resultingJson = JsonNodeFactory.instance.objectNode()
+        mappings.map { (fromKey, toKey) ->
+            val readValue = dto.json.readKeyRecursively(fromKey)
+            resultingJson.putIfAbsent(toKey, readValue)
+        }
+        return resultingJson
+    }
+
+    private fun JsonNode.readKeyRecursively(completeKey: String): JsonNode {
+        val multiDepthKeys = completeKey.split(" > ")
+        if (multiDepthKeys.size <= 1) {
+            return readKey(completeKey)
+        }
+
+        var lastChild = this
+        multiDepthKeys.forEach { lastChild = lastChild.readKeyRecursively(it) }
+        return lastChild
+    }
+
+    private fun JsonNode.readKey(key: String) = this.get(key) ?: throw NotFoundException("Key $key not found.")
+
     private fun makeConnectionRequest(
-        dto: ConnectorDTO,
+        dto: ConnectorRequestDTO,
         resultingJson: ObjectNode
     ): Any? {
         val requestUrl = dto.getConnectUsingURL()
@@ -47,18 +70,9 @@ class ConnectorService(
         throw ConnectException("Could not complete request [$requestMethod] \"$requestUrl\". Reason: ${response.body}")
     }
 
-    private fun translateJson(mappings: Map<String, String>, dto: ConnectorDTO): ObjectNode {
-        val resultingJson = JsonNodeFactory.instance.objectNode()
-        mappings.map { (fromKey, toKey) ->
-            val readValue = dto.json.readKey(fromKey)
-            resultingJson.putIfAbsent(toKey, readValue)
-        }
-        return resultingJson
-    }
-
-    private fun getMappings(mappingId: Long) = mappingService.findById(mappingId).getJsonAsMap()
-
-
-    private fun JsonNode.readKey(key: String) = this.get(key) ?: throw NotFoundException("Key $key not found.")
+    private fun buildResponse(resultingJson: ObjectNode, connectionResponse: Any?) = ConnectorResponseDTO(
+        connectionResponse = connectionResponse,
+        translatedJson = resultingJson
+    )
 
 }

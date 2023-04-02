@@ -10,6 +10,6 @@ import org.springframework.web.bind.annotation.RestController
 class ConnectorController(private val service: ConnectorService) {
 
     @PostMapping
-    fun connect(@RequestBody body: ConnectorDTO) = service.connect(body)
+    fun connect(@RequestBody body: ConnectorRequestDTO) = service.connect(body)
 
 }
