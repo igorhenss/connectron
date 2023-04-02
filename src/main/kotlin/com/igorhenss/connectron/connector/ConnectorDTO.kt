@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode
 
 data class ConnectorDTO(
 
+    val request: ConnectorRequestDTO,
     val mappingId: Long,
-    val json: JsonNode,
-    val request: ConnectorRequestDTO
+    val json: JsonNode
 
 ) {
 

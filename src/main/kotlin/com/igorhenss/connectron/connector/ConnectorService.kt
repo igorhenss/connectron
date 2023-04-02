@@ -19,7 +19,7 @@ class ConnectorService(
     private val mappingService: MappingService
 ) {
 
-    fun connect(dto: ConnectorDTO): Any {
+    fun connect(dto: ConnectorDTO): Any? {
         val mappings = getMappings(dto.mappingId)
         val resultingJson = translateJson(mappings, dto)
         return makeConnectionRequest(dto, resultingJson)
@@ -28,7 +28,7 @@ class ConnectorService(
     private fun makeConnectionRequest(
         dto: ConnectorDTO,
         resultingJson: ObjectNode
-    ): Any {
+    ): Any? {
         val requestUrl = dto.getConnectUsingURL()
         val requestMethod = dto.getConnectUsingMethod()
         val requestEntity = HttpEntity(resultingJson)
@@ -39,10 +39,10 @@ class ConnectorService(
         requestUrl: String,
         requestMethod: HttpMethod,
         requestEntity: HttpEntity<ObjectNode>
-    ): Any {
+    ): Any? {
         val response = restTemplate.exchange(requestUrl, requestMethod, requestEntity, Any::class.java)
-        if (response.statusCode.is2xxSuccessful && response.hasBody()) {
-            return response.body!!
+        if (response.statusCode.is2xxSuccessful) {
+            return response.body
         }
         throw ConnectException("Could not complete request [$requestMethod] \"$requestUrl\". Reason: ${response.body}")
     }

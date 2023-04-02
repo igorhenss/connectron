@@ -7,8 +7,8 @@ import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.*
 import org.hibernate.annotations.Type
 
-@Table
 @Entity
+@Table(name = "mapping", schema = "connectron")
 class Mapping(
 
     @Id
