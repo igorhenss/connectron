@@ -1,4 +1,4 @@
-package com.igorhenss.connectron.connector
+package com.igorhenss.connectron.connector.dto
 
 import com.fasterxml.jackson.databind.JsonNode
 

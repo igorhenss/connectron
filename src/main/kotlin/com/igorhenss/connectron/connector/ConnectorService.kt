@@ -2,7 +2,10 @@ package com.igorhenss.connectron.connector
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
+import com.fasterxml.jackson.databind.node.MissingNode
 import com.fasterxml.jackson.databind.node.ObjectNode
+import com.igorhenss.connectron.connector.dto.ConnectorRequestDTO
+import com.igorhenss.connectron.connector.dto.ConnectorResponseDTO
 import com.igorhenss.connectron.exception.ConnectException
 import com.igorhenss.connectron.exception.NotFoundException
 import com.igorhenss.connectron.mapping.MappingService
@@ -30,10 +33,44 @@ class ConnectorService(
         val resultingJson = JsonNodeFactory.instance.objectNode()
         mappings.map { (fromKey, toKey) ->
             val readValue = dto.json.readKeyRecursively(fromKey)
-            resultingJson.putIfAbsent(toKey, readValue)
+            resultingJson.putGroupingByOuterKey(toKey, readValue)
         }
         return resultingJson
     }
+
+    private fun ObjectNode.putGroupingByOuterKey(completeKey: String, readValue: JsonNode) {
+        val multiDepthKeys = completeKey.split(" > ")
+        if (multiDepthKeys.size <= 1) {
+            this.putIfAbsent(completeKey, readValue)
+            return
+        }
+
+        multiDepthKeys.forEachIndexed { index, key -> run {
+            val previousIndex = index - 1
+
+            if (index != multiDepthKeys.lastIndex) {
+                if (index > 0) {
+                    if (nodeExistsForPath(multiDepthKeys[index])) {
+                        getObjectNodeForPath(multiDepthKeys[previousIndex]).putObject(key)
+                    }
+                } else {
+                    if (this.get(key) == null) {
+                        this.putObject(key)
+                    }
+                }
+            }
+
+            if (index == multiDepthKeys.lastIndex) {
+                getObjectNodeForPath(multiDepthKeys[previousIndex]).putIfAbsent(key, readValue)
+            }
+        } }
+    }
+
+    private fun ObjectNode.nodeExistsForPath(path: String) = getNodeForPath(path) is MissingNode
+
+    private fun ObjectNode.getObjectNodeForPath(path: String) = getNodeForPath(path) as ObjectNode
+
+    private fun ObjectNode.getNodeForPath(path: String) = this.findPath(path)
 
     private fun JsonNode.readKeyRecursively(completeKey: String): JsonNode {
         val multiDepthKeys = completeKey.split(" > ")

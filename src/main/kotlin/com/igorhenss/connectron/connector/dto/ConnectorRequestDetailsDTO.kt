@@ -1,4 +1,4 @@
-package com.igorhenss.connectron.connector
+package com.igorhenss.connectron.connector.dto
 
 import org.springframework.http.HttpMethod
 

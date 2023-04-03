@@ -1,4 +1,4 @@
-package com.igorhenss.connectron.core
+package com.igorhenss.connectron.common
 
 import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.context.annotation.Bean

@@ -1,7 +1,7 @@
 package com.igorhenss.connectron.mapping
 
 import com.fasterxml.jackson.core.type.TypeReference
-import com.igorhenss.connectron.core.mapper
+import com.igorhenss.connectron.common.mapper
 import com.igorhenss.connectron.user.User
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.*

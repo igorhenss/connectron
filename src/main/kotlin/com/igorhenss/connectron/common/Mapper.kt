@@ -1,4 +1,4 @@
-package com.igorhenss.connectron.core
+package com.igorhenss.connectron.common
 
 import com.fasterxml.jackson.core.json.JsonReadFeature
 import com.fasterxml.jackson.databind.DeserializationFeature
