@@ -10,7 +10,6 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 private val mapperInstance = jacksonObjectMapper().apply {
     this.registerModule(JavaTimeModule())
     this.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    this.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
     this.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
     this.configure(JsonReadFeature.ALLOW_UNESCAPED_CONTROL_CHARS.mappedFeature(), true)
 }

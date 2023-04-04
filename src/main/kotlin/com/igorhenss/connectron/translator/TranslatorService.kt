@@ -12,43 +12,13 @@ class TranslatorService {
 
     fun translateJsonUsingMappings(mappings: Map<String, String>, dto: ConnectorRequestDTO): ObjectNode {
         val resultingJson = JsonNodeFactory.instance.objectNode()
-        mappings.map { (fromKey, toKey) ->
-            val readValue = dto.json.readKeyRecursively(fromKey)
-            resultingJson.putGroupingByOuterKey(toKey, readValue)
-        }
+        mappings.map { (fromKey, toKey) -> translateOriginalJson(dto.json, fromKey, resultingJson, toKey) }
         return resultingJson
     }
 
-    private fun ObjectNode.putGroupingByOuterKey(completeKey: String, readValue: JsonNode) {
-        val multiDepthKeys = completeKey.split(" > ")
-        if (multiDepthKeys.size <= 1) {
-            this.putIfAbsent(completeKey, readValue)
-            return
-        }
-
-        multiDepthKeys.forEachIndexed { index, key -> run {
-            if (index == multiDepthKeys.lastIndex) {
-                getObjectNodeForPath(multiDepthKeys, index).putIfAbsent(key, readValue)
-            } else if (index > 0) {
-                if (nodeDoesNotExistForPath(multiDepthKeys, index)) getObjectNodeForPath(multiDepthKeys, index).putObject(key)
-            } else {
-                if (this.get(key) == null) this.putObject(key)
-            }
-        } }
-    }
-
-    private fun ObjectNode.getObjectNodeForPath(fullPath: List<String>, index: Int): ObjectNode {
-        return findUntil(fullPath, index) as ObjectNode
-    }
-
-    private fun ObjectNode.nodeDoesNotExistForPath(fullPath: List<String>, index: Int): Boolean {
-        return findUntil(fullPath, index)?.get(fullPath[index]) == null
-    }
-
-    private fun ObjectNode.findUntil(keys: List<String>, index: Int): JsonNode? {
-        var lastFound = this.get(keys[0])
-        keys.filterIndexed { i, _ -> i in 1 until index }.forEach { key -> lastFound = lastFound.get(key) }
-        return lastFound
+    private fun translateOriginalJson(json: JsonNode, fromKey: String, resultingJson: ObjectNode, toKey: String) {
+        val readValue = json.readKeyRecursively(fromKey)
+        resultingJson.putValueToKey(toKey, readValue)
     }
 
     private fun JsonNode.readKeyRecursively(completeKey: String): JsonNode {
@@ -63,5 +33,55 @@ class TranslatorService {
     }
 
     private fun JsonNode.readKey(key: String) = this.get(key) ?: throw NotFoundException("Key $key not found.")
+
+    private fun ObjectNode.putValueToKey(completeKey: String, readValue: JsonNode) {
+        val multiDepthKeys = completeKey.split(" > ")
+        if (multiDepthKeys.size <= 1) {
+            this.putIfAbsent(completeKey, readValue)
+            return
+        }
+
+        this.putValueToCompletePath(multiDepthKeys, readValue)
+    }
+
+    private fun ObjectNode.putValueToCompletePath(multiDepthKeys: List<String>, readValue: JsonNode) {
+        multiDepthKeys.forEachIndexed { index, key ->
+            when (index) {
+                0 -> createKeyIfNecessary(key)
+                multiDepthKeys.lastIndex -> putValueToCurrentKey(multiDepthKeys, index, key, readValue)
+                else -> createKeyIfNecessary(multiDepthKeys, index, key)
+            }
+        }
+    }
+
+    private fun ObjectNode.createKeyIfNecessary(key: String) {
+        if (this.get(key) == null) {
+            this.putObject(key)
+        }
+    }
+
+    private fun ObjectNode.putValueToCurrentKey(multiDepthKeys: List<String>, index: Int, key: String, readValue: JsonNode) {
+        getObjectNodeForPath(multiDepthKeys, index).putIfAbsent(key, readValue)
+    }
+
+    private fun ObjectNode.createKeyIfNecessary(multiDepthKeys: List<String>, index: Int, key: String) {
+        if (nodeDoesNotExistForPath(multiDepthKeys, index)) {
+            getObjectNodeForPath(multiDepthKeys, index).putObject(key)
+        }
+    }
+
+    private fun ObjectNode.nodeDoesNotExistForPath(fullPath: List<String>, index: Int): Boolean {
+        return findForCompletePath(fullPath, index)?.get(fullPath[index]) == null
+    }
+
+    private fun ObjectNode.getObjectNodeForPath(fullPath: List<String>, index: Int): ObjectNode {
+        return findForCompletePath(fullPath, index) as ObjectNode
+    }
+
+    private fun ObjectNode.findForCompletePath(keys: List<String>, index: Int): JsonNode? {
+        var lastFound = this.get(keys[0])
+        keys.filterIndexed { i, _ -> i in 1 until index }.forEach { key -> lastFound = lastFound.get(key) }
+        return lastFound
+    }
 
 }
